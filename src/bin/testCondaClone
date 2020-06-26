@@ -1,0 +1,70 @@
+#!/bin/bash
+
+. ~/.bashrc
+
+
+declare -A importMap
+importMap[mxnet_p36]="mxnet"
+importMap[mxnet_p27]="mxnet"
+importMap[amazonei_mxnet_p36]="mxnet"
+importMap[amazonei_mxnet_p27]="mxnet"
+importMap[tensorflow_p36]="tensorflow"
+importMap[tensorflow_p27]="tensorflow"
+importMap[amazonei_tensorflow_p27]="tensorflow"
+importMap[amazonei_tensorflow_p36]="tensorflow"
+importMap[theano_p36]="theano"
+importMap[theano_p27]="theano"
+importMap[pytorch_p36]="torch"
+importMap[pytorch_p27]="torch"
+importMap[amazonei_pytorch_p36]="torch"
+importMap[cntk_p36]="cntk"
+importMap[cntk_p27]="cntk"
+importMap[chainer_p27]="chainer"
+importMap[chainer_p36]="chainer"
+importMap[caffe2_p27]="caffe2"
+importMap[caffe_p27]="caffe"
+importMap[caffe_p35]="caffe"
+importMap[aws_neuron_pytorch_p36]="torch"
+importMap[aws_neuron_mxnet_p36]="mxnet"
+importMap[aws_neuron_tensorflow_p36]="tensorflow"
+importMap[tensorflow2_p36]="tensorflow"
+importMap[tensorflow2_p27]="tensorflow"
+
+failed_env=()
+
+CONDA_ENV_LIST=($(conda info --envs | awk 'BEGIN{n=3}NR<=n{next}1' | awk '{print $1}'))
+for (( i=0; i<${#CONDA_ENV_LIST[@]}; i++ ));
+do
+    if [ "${CONDA_ENV_LIST[i]}" = "python2" ] || [ "${CONDA_ENV_LIST[i]}" = "python3" ]
+    then
+        continue
+    fi
+    if [ -z "${importMap[${CONDA_ENV_LIST[i]}]}" ]
+    then
+        echo "${CONDA_ENV_LIST[i]} environment does not exist in the defined map, please add it accordingly"
+        exit 1
+    fi
+    echo "Cloning environment ${CONDA_ENV_LIST[i]} ..."
+    # install optimized binary first
+    source activate "${CONDA_ENV_LIST[i]}"
+    source deactivate
+    conda create --name "tmp_${CONDA_ENV_LIST[i]}" --clone ${CONDA_ENV_LIST[i]}
+    clone_succ=$?
+    source activate "tmp_${CONDA_ENV_LIST[i]}"
+    python -c "import ${importMap[${CONDA_ENV_LIST[i]}]}"
+    import_succ=$?
+    source deactivate
+    conda env remove -n "tmp_${CONDA_ENV_LIST[i]}" --yes
+    if [ $clone_succ -ne 0 ] || [ $import_succ -ne 0 ]
+    then
+        failed_env+=("${CONDA_ENV_LIST[i]}")
+    fi
+done
+
+if [ ${#failed_env[@]} -ne 0 ]
+then
+    echo "ERROR: Conda environment that failed during cloning: " ${failed_env[@]}
+    exit 1
+fi
+
+exit 0

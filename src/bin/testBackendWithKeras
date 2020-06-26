@@ -1,0 +1,50 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+
+KERASDIR=${HOME_DIR}/src/keras
+set -e
+cd ${KERASDIR}
+
+mkdir -p ${HOME_DIR}/src/logs
+
+export KERAS_BACKEND=$1
+if [ -z "$KERAS_BACKEND" ]; then
+    echo "usage: testBackendWithKeras theano OR testBackendWithKeras tensorflow OR testBackendWithKeras mxnet OR cntk"
+    exit 1
+fi
+
+TRAINING_LOG=${HOME_DIR}/src/logs/${KERAS_BACKEND}_train_mnist.log
+
+PYTHON_BIN=$2
+echo "Training mnist using $KERAS_BACKEND... This may take a few minutes. You can follow progress on the log file : $TRAINING_LOG"
+$PYTHON_BIN examples/mnist_cnn.py >$TRAINING_LOG 2>&1 || exit 1
+echo "Training mnist Complete using $KERAS_BACKEND."
+
+# TensorFlow time to time might output different warnings after printing the accuracy. This makes the test flaky.
+if [ "$KERAS_BACKEND" !=  "tensorflow" ]; then
+    ACCURACY=0.50
+    for i in $(sed "s/Test accuracy: //g" $TRAINING_LOG); do
+        ACCURACY=$i
+    done
+
+    ACCURACY=`python -c "print(str($ACCURACY*100))"`
+    ACCURACY=${ACCURACY%.*}
+
+    if [[ $ACCURACY -lt 95 ]]; then
+      echo "Failed Validation Accuracy using $KERAS_BACKEND: $ACCURACY"
+      echo "Training Log: "
+      cat $TRAINING_LOG
+      exit 1
+    fi
+    echo "Successful Validation Accuracy using $KERAS_BACKEND: $ACCURACY"
+fi
+
+#Delete the downloaded mnist database
+set +e
+rm -rf ${HOME_DIR}/.keras/datasets
+set -e
+exit 0

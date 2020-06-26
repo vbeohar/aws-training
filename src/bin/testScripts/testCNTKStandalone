@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+import sys
+import subprocess
+from subprocess import PIPE
+
+import logging
+import cntk
+import numpy as np
+from cntk.device import try_set_default_device, gpu
+
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+
+def main():
+    check_cntk()
+
+def check_cntk():
+    try:
+        process = subprocess.Popen(["bash", "-c", "nvidia-smi"], stdout=PIPE)
+        process.communicate()
+        ret_val = process.wait()
+        is_gpu = not ret_val
+
+        if is_gpu:
+            #Use GPU as default device
+            try_set_default_device(gpu(0))
+
+            x_var = cntk.input_variable(2)
+            y_var = cntk.input_variable(2)
+            x0_var = np.asarray([[2., 1.]], dtype=np.float32)
+            y0_var = np.asarray([[4., 6.]], dtype=np.float32)
+
+            assert cntk.squared_error(x_var, y_var).eval({x_var:x0_var, y_var:y0_var}), "Error: GPU sanity test for CNTK failed."
+        else:
+            #Use CPU as default device
+            x_var = cntk.input_variable(2)
+            y_var = cntk.input_variable(2)
+            x0_var = np.asarray([[2., 1.]], dtype=np.float32)
+            y0_var = np.asarray([[4., 6.]], dtype=np.float32)
+
+            assert cntk.squared_error(x_var, y_var).eval({x_var:x0_var, y_var:y0_var}), "Error: CPU sanity test for CNTK failed."
+
+    except Exception as excp:
+        LOGGER.debug("Error: check_cntk test failed.")
+        LOGGER.debug("Exception: {}".format(excp))
+        raise
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        pass

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+
+declare -a mxnet_files=('testBasicONNX.py' 'onnx_mxnet/onnx_mxnet.sh')
+
+source activate amazonei_mxnet_p27
+echo "amazonei_mxnet_p27"
+for file in "${mxnet_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+
+source activate amazonei_mxnet_p36
+echo "amazonei_mxnet_p36"
+for file in "${mxnet_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+
+exit 0

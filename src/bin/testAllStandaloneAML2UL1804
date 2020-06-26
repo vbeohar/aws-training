@@ -1,0 +1,55 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+TEST_DIR=$BIN_DIR/testScripts
+
+set -e
+echo "Running testAllStandalone"
+if [ -e $TEST_DIR/testPyTorchStandalone ]; then
+    echo -n "Running testPyTorchStandalone"
+    source activate pytorch_p27
+    ${TEST_DIR}/testPyTorchStandalone || (echo "testPyTorchStandalone : TEST FAILED" && exit 1)
+    source deactivate
+    source activate pytorch_p36
+    ${TEST_DIR}/testPyTorchStandalone || (echo "testPyTorchStandalone : TEST FAILED" && exit 1)
+    source deactivate
+    echo ": TEST PASSED"
+fi
+
+if [ -e $TEST_DIR/testChainerStandalone ]; then
+    echo -n "Running testChainerStandalone"
+    source activate chainer_p27
+    ${TEST_DIR}/testChainerStandalone || (echo "testChainerStandalone : TEST FAILED" && exit 1)
+    source deactivate
+    source activate chainer_p36
+    ${TEST_DIR}/testChainerStandalone || (echo "testChainerStandalone : TEST FAILED" && exit 1)
+    source deactivate
+    echo ": TEST PASSED"
+fi
+
+if [ -e $TEST_DIR/testMXNetStandalone ]; then
+    echo -n "Running testMXNetStandalone"
+    source activate mxnet_p27
+    ${TEST_DIR}/testMXNetStandalone || (echo "testMXNetStandalone : TEST FAILED" && exit 1)
+    source deactivate
+    source activate mxnet_p36
+    ${TEST_DIR}/testMXNetStandalone || (echo "testMXNetStandalone : TEST FAILED" && exit 1)
+    source deactivate
+    echo ": TEST PASSED"
+fi
+
+if [ -e $TEST_DIR/testTensorFlowStandalone ]; then
+    echo -n "Running testTensorFlowStandalone"
+    source activate tensorflow_p27
+    ${TEST_DIR}/testTensorFlowStandalone || (echo "testTensorFlowStandalone : TEST FAILED" && exit 1)
+    source deactivate
+    source activate tensorflow_p36
+    ${TEST_DIR}/testTensorFlowStandalone || (echo "testTensorFlowStandalone : TEST FAILED" && exit 1)
+    source deactivate
+    echo ": TEST PASSED"
+fi
+
+echo "testAllStandalone PASSED"

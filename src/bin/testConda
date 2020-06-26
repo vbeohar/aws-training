@@ -1,0 +1,83 @@
+#!/bin/bash
+
+. ~/.bashrc
+
+set -e
+
+# test the conda env lifecycle i.e. conda create, install, uninstall, delete
+conda create -n testCondaTheano python=3.6 --yes
+source activate testCondaTheano
+conda install -y theano
+python -c "import theano; theano.__version__"
+source deactivate
+
+conda create -n testCondaPipChainer python=2.7 --yes
+source activate testCondaPipChainer
+yes | pip install chainer==6.5.0
+python -c "import chainer; chainer.__version__"
+source deactivate
+
+conda env remove -n testCondaTheano --yes
+conda env remove -n testCondaPipChainer --yes
+
+set +e
+
+conda_install(){
+  local CONDA_ENV=$1
+  source activate ${CONDA_ENV}
+    python -c "import pytest"
+    # check if pytest is already installed
+    if [ $? -eq 0 ]
+    then
+        conda remove -y pytest || exit 1
+        pip uninstall -y pytest || exit 1
+    fi
+    set -e
+    # Pinning to 4.6.2 as it is currently the last available version in conda supporting both py2 and py3.
+    # Staring version 5, py2 support has been dropped: https://sim.amazon.com/issues/DLAMI-300
+    # If pytest build hash is not pinned in caffe_p35, env gets updated to py3.7
+    conda config --env --add pkgs_dirs "~/anaconda3/envs/${CONDA_ENV}/pkgs"
+    if [ ${CONDA_ENV} == "caffe_p35" ]; then
+        conda install -y pytest=3.8.1=py35_0
+    else
+        conda install -y pytest=3.8.1
+    fi
+    python -c "import pytest"
+    conda remove -y pytest
+    yes | pip install -U --ignore-installed pytest==3.8.1
+    python -c "import pytest"
+    pip uninstall -y pytest
+    source deactivate
+    set +e
+}
+
+# test to do both conda and pip install and uninstall of a new package in all the prebuilt conda envs in DLAMI
+# get list of conda environments on the system
+CONDA_ENV_LIST=($(conda info --envs | awk 'BEGIN{n=3}NR<=n{next}1' | awk '{print $1}'))
+for (( i=0; i<${#CONDA_ENV_LIST[@]}; i++ ));
+do
+  conda_install "${CONDA_ENV_LIST[i]}" &
+  process_ids[${i}]=$!
+  conda_envs[${i}]=${CONDA_ENV_LIST[i]}
+
+done
+EXIT_CODE=0
+failed_env_count=0;
+for (( i=0; i<${#process_ids[@]}; i++ )); do
+       wait ${process_ids[i]} ;
+       CODE=$?
+       if [[ "${CODE}" != "0" ]]; then
+           failed_conda_envs[${failed_env_count}]=${conda_envs[i]};
+           failed_env_count+=1;
+           EXIT_CODE=1;
+       fi
+done
+
+if (( ${#failed_conda_envs[@]} )); then
+  echo "testConda failed on the below environments"
+  for env in "${failed_conda_envs[@]}"; do
+  echo "${env}"
+done
+fi
+
+exit "${EXIT_CODE}"

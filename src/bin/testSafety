@@ -1,0 +1,15 @@
+#!/bin/bash
+
+CONDA_ENV_LIST=($(conda info --envs | awk 'BEGIN{n=3}NR<=n{next}1' | awk '{print $1}'))
+
+pip install safety --user
+safety check --json
+
+for conda_env in "${CONDA_ENV_LIST[@]}"
+do
+    echo "Conda environment name is : $conda_env"
+    source activate $conda_env
+    pip install safety -q
+    safety check --json
+    source deactivate
+done

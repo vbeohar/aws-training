@@ -1,0 +1,27 @@
+#!/bin/bash
+. ~/.bashrc
+INSTANCE_TYPE=`curl http://169.254.169.254/latest/meta-data/instance-type`
+if [[ $INSTANCE_TYPE == g2* ]]; then
+  echo "This is g2* instance. Skipped."
+  exit 0
+fi
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+
+source activate tensorflow_p27
+${BIN_DIR}/testTFHVDHelper || exit 1
+source deactivate
+source activate tensorflow_p36
+${BIN_DIR}/testTFHVDHelper || exit 1
+source deactivate
+
+source activate mxnet_p27
+${BIN_DIR}/testMXNetHVDHelper || exit 1
+source deactivate
+source activate mxnet_p36
+${BIN_DIR}/testMXNetHVDHelper || exit 1
+source deactivate
+exit 0

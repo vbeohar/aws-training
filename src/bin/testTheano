@@ -1,0 +1,33 @@
+#!/bin/bash
+. ~/.bashrc
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+PIPELINE_TEST=$1
+
+if [ -e ${HOME_DIR}/src/anaconda2 ]; then
+    ${BIN_DIR}/testBackendWithKeras theano python || exit 1
+    ${BIN_DIR}/testBackendWithKeras theano python3 || exit 1
+    ${BIN_DIR}/testBackendWithKeras theano ${HOME_DIR}/src/anaconda2/bin/python || exit 1
+    ${BIN_DIR}/testBackendWithKeras theano ${HOME_DIR}/src/anaconda3/bin/python3 || exit 1
+    exit 0
+fi
+
+git clone https://github.com/fchollet/keras.git ${HOME_DIR}/src/keras
+if [ ${PIPELINE_TEST} = true ]; then
+     sed -i "s/epochs = 12/epochs = 2/g" "${HOME_DIR}/src/keras/examples/mnist_cnn.py"
+     sed -i "s/batch_size = 128/batch_size = 256/g" "${HOME_DIR}/src/keras/examples/mnist_cnn.py"
+fi
+
+source activate theano_p27
+${BIN_DIR}/testBackendWithKeras theano python || exit 1
+source deactivate
+
+source activate theano_p36
+${BIN_DIR}/testBackendWithKeras theano python || exit 1
+source deactivate
+rm -rf ${HOME_DIR}/src/keras
+exit 0
+

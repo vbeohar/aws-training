@@ -1,0 +1,31 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+TUTORIAL_DIR=${HOME_DIR}/tutorials/tensorflow
+
+rm -rf ${HOME_DIR}/tutorials/tensorflow/*.py
+find ${TUTORIAL_DIR} -type f -name "*.ipynb" | xargs ipython nbconvert --to python
+
+for i in ${TUTORIAL_DIR}/*.py;
+do
+ sed -i '24 i import matplotlib' $i
+ sed -i "25 i matplotlib.use('Agg')" $i
+done;
+
+
+source activate tensorflow_p27 
+python ${TUTORIAL_DIR}/1_hello_tensorflow.py || exit 1
+source deactivate
+# Below tests will fail due to open issue https://github.com/jupyter/nbconvert/issues/503
+
+#source activate tensorflow_p36
+#python ${TUTORIAL_DIR}/2_getting_started.py || exit 1
+#source deactivate
+#source activate tensorflow_p36 
+#python ${TUTORIAL_DIR}/3_mnist_from_scratch.py || exit 1
+#source deactivate
+
+exit 0

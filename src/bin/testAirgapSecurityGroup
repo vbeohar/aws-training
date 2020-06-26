@@ -1,0 +1,152 @@
+#!/bin/bash
+ 
+. ~/.bashrc
+
+set -e
+ 
+PRETTY_NAME=$(cat /etc/os-release | grep PRETTY_NAME)
+
+# ================================================================
+# Common Environments to all Conda DLAMI 
+# ================================================================
+
+source activate tensorflow_p27
+echo "tensorflow_p27"
+python -c "import tensorflow as tf; print(tf.__version__)"
+source deactivate
+ 
+source activate tensorflow_p36
+echo "tensorflow_p36"
+python -c "import tensorflow as tf; print(tf.__version__)"
+source deactivate
+
+source activate tensorflow2_p27
+echo "tensorflow2_p27"
+python -c "import tensorflow as tf; print(tf.__version__)"
+source deactivate
+ 
+source activate tensorflow2_p36
+echo "tensorflow2_p36"
+python -c "import tensorflow as tf; print(tf.__version__)"
+source deactivate
+
+source activate mxnet_p27
+echo "mxnet_p27"
+python -c "import mxnet; print(mxnet.__version__)"
+source deactivate
+ 
+source activate mxnet_p36
+echo "mxnet_p36"
+python -c "import mxnet; print(mxnet.__version__)"
+source deactivate
+
+source activate pytorch_p27
+echo "pytorch_p27"
+python -c "import torch; print(torch.__version__)"
+source deactivate
+
+source activate pytorch_p36
+echo "pytorch_p36"
+python -c "import torch; print(torch.__version__)"
+source deactivate
+
+source activate chainer_p27
+echo "chainer_p27"
+python -c "import chainer; print(chainer.__version__)"
+source deactivate
+ 
+source activate chainer_p36
+echo "chainer_p36"
+python3 -c "import chainer; print(chainer.__version__)"
+source deactivate
+
+# ================================================================
+# For DLAMI Ubuntu 16.04 or Amazon Linux specific 
+# ================================================================
+
+if [[ $PRETTY_NAME == *"Ubuntu 16.04"* ]] || [[ $PRETTY_NAME == *"Amazon Linux AMI"* ]]; then
+
+    source activate amazonei_tensorflow_p27
+    echo "amazonei_tensorflow_p27"
+    python -c "import tensorflow; print(tensorflow.__version__)"
+    source deactivate
+    
+    source activate amazonei_tensorflow_p36
+    echo "amazonei_tensorflow_p36"
+    python -c "import tensorflow; print(tensorflow.__version__)"
+    source deactivate
+
+    source activate amazonei_mxnet_p27
+    echo "amazonei_mxnet_p27"
+    python -c "import mxnet; print(mxnet.__version__)"
+    source deactivate
+    
+    source activate amazonei_mxnet_p36
+    echo "amazonei_mxnet_p36"
+    python -c "import mxnet; print(mxnet.__version__)"
+    source deactivate
+
+    source activate amazonei_pytorch_p36
+    echo "amazonei_pytorch_p36"
+    python -c "import torch; print(torch.__version__)"
+    source deactivate
+
+    source activate cntk_p27
+    echo "cntk_p27"
+    python -c "import cntk; print(cntk.__version__)"
+    source deactivate
+    
+    source activate cntk_p36
+    echo "cntk_p36"
+    python -c "import cntk; print(cntk.__version__)"
+    source deactivate
+    
+    source activate caffe2_p27
+    echo "caffe2_p27"
+    python -c "import caffe"
+    source deactivate
+    
+    source activate caffe_p27
+    echo "caffe_p27"
+    python -c "import caffe; print(caffe.__version__)"
+    source deactivate
+    
+    source activate caffe_p35
+    echo "caffe_p35"
+    python -c "import caffe; print(caffe.__version__)"
+    source deactivate
+
+    source activate theano_p27
+    echo "theano_p27"
+    python -c "import theano; print(theano.__version__)"
+    source deactivate
+    
+    source activate theano_p36
+    echo "theano_p36"
+    python -c "import theano; print(theano.__version__)"
+    source deactivate
+
+fi
+
+# ================================================================
+# For DLAMI Ubuntu 16.04 or Ubuntu18.04 or Amazon Linux 2 specific
+# ================================================================
+
+if [[ $PRETTY_NAME == *"Ubuntu 16.04"* ]] || [[ $PRETTY_NAME == *"Ubuntu 18.04"* ]] || [[ $PRETTY_NAME == *"Amazon Linux 2"* ]]; then
+    source activate aws_neuron_tensorflow_p36
+    echo "aws_neuron_tensorflow_p36"
+    python -c "import tensorflow as tf; print(tf.__version__)"
+    source deactivate
+    
+    source activate aws_neuron_mxnet_p36
+    echo "aws_neuron_mxnet_p36"
+    python -c "import mxnet; print(mxnet.__version__)"
+    source deactivate
+
+    source activate aws_neuron_pytorch_p36
+    echo "aws_neuron_pytorch_p36"
+    python3 -c "import torch; print(torch.__version__)"
+    source deactivate
+fi
+
+set +e

@@ -1,0 +1,49 @@
+#!/bin/bash
+ 
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+ 
+declare -a mxnet_files=('testBasicONNX.py' 'onnx_mxnet/onnx_mxnet.sh')
+declare -a pytorch_files=('testBasicONNX.py' 'onnx_pytorch/onnx_pytorch.sh')
+declare -a chainer_files=('testBasicONNX.py' 'onnx_chainer/onnx_chainer.sh')
+
+source activate mxnet_p27
+echo "mxnet_p27"
+for file in "${mxnet_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+ 
+source activate mxnet_p36
+echo "mxnet_p36"
+for file in "${mxnet_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+ 
+source activate pytorch_p27
+echo "pytorch_p27"
+for file in "${pytorch_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+ 
+source activate pytorch_p36
+echo "pytorch_p36"
+for file in "${pytorch_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+ 
+source activate chainer_p27
+echo "chainer_p27"
+for file in "${chainer_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+
+source activate chainer_p36
+echo "chainer_p36"
+for file in "${chainer_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+
+echo "chainer-mxnet"
+${BIN_DIR}/testScripts/chainer-mxnet/test_runner.sh || exit 1
+
+# Exporting PyTorch 1.3 models into MXNet 1.6 is not supported.
+# echo "pytorch-mxnet"
+# ${BIN_DIR}/testScripts/pytorch-mxnet/test_runner.sh || exit 1
+
+exit 0

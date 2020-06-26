@@ -1,0 +1,37 @@
+#!/bin/bash
+. ~/.bashrc
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+OUTPUT_LOG=${HOME_DIR}/src/mxnet_mkl.log
+PATTERN=$(printf '\u2714 MKLDNN')
+PRESENT=0
+
+source activate mxnet_p27
+python -c "from mxnet.runtime import Features; print(Features())" > ${OUTPUT_LOG} || exit 1
+echo "For mxnet_p27 env" && cat ${OUTPUT_LOG}
+if grep -F "${PATTERN}" ${OUTPUT_LOG} > /dev/null; then
+   echo "MKLDNN binary is availalble in Mxnet_p27 env"
+else
+   echo "MKLDNN binary is not availalble in Mxnet_p27 env"
+   PRESENT=-1
+fi
+source deactivate
+
+source activate mxnet_p36
+python -c "from mxnet.runtime import Features; print(Features())" > ${OUTPUT_LOG} || exit 1
+echo "For mxnet_p36 env" && cat ${OUTPUT_LOG}
+if grep -F "${PATTERN}" ${OUTPUT_LOG} > /dev/null; then
+   echo "MKLDNN binary is availalble in Mxnet_p36 env"
+else
+   echo "MKLDNN binary is not availalble in Mxnet_p36 env"
+   PRESENT=-1
+fi
+source deactivate
+if [ $PRESENT == -1 ] ; then
+  exit 1
+fi
+
+exit 0

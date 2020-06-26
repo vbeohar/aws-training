@@ -1,0 +1,77 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+
+MXNET_HVD=${HOME_DIR}/src/mx_hvd
+TRAINING_LOG=${HOME_DIR}/src/logs/mxnet_hvd_test.log
+
+set -e
+
+echo "Simply verify if Horovod works well in $CONDA_DEFAULT_ENV environment. You can follow progress on the log file : $TRAINING_LOG" | tee -a $TRAINING_LOG
+set +e
+nvidia-smi
+RETURN_VAL=`echo $?`
+set -e
+
+if [ ${RETURN_VAL} -eq 0 ]; then
+  ~/anaconda3/envs/$CONDA_DEFAULT_ENV/bin/mpirun -np 1 -bind-to none -map-by slot \
+  -x LD_LIBRARY_PATH -x PATH -mca pml ob1 -mca btl ^openib \
+  python -u ${BIN_DIR}/testScripts/testMXNetHVD.py \
+  2> ${TRAINING_LOG}
+else
+  echo "Horovod training is only supported on instances with GPU."
+  exit 0
+fi
+
+if grep "Time cost=" $TRAINING_LOG; then
+  echo "Successfully verified Horovod works with mpi."
+else
+  echo "Horovod training failed with mpi."
+  cat ${TRAINING_LOG}
+  exit 1
+fi
+
+echo "Train a CNN model using Horovod with MXNet on MNIST data. You can follow progress on the log file : $TRAINING_LOG" | tee -a $TRAINING_LOG
+
+if [ ${RETURN_VAL} -eq 0 ]; then
+  GPU_AMOUNT=`nvidia-smi -L | wc -l`
+  if [ $GPU_AMOUNT -ge 8 ]; then GPU_AMOUNT=8; fi
+  INSTANCE_TYPE=`curl http://169.254.169.254/latest/meta-data/instance-type 2>>/var/tmp/${CONDA_DEFAULT_ENV}.err`
+  if [  -n "$(uname -a | grep Ubuntu)" ]; then 
+    INTERFACE=ens3
+    if [[ $INSTANCE_TYPE == "p3dn"* ]] || [[ $INSTANCE_TYPE == "g4dn"* ]]; then
+      INTERFACE=ens5
+    fi
+  else 
+    INTERFACE=eth0
+  fi
+  # Train
+  ~/anaconda3/envs/$CONDA_DEFAULT_ENV/bin/mpirun -np $GPU_AMOUNT -hostfile ~/examples/horovod/mxnet/hosts -mca plm_rsh_no_tree_spawn 1 \
+        -bind-to socket -map-by slot \
+        -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 -x HOROVOD_FUSION_THRESHOLD=16777216 \
+        -x NCCL_MIN_NRINGS=4 -x LD_LIBRARY_PATH -x PATH -mca pml ob1 -mca btl ^openib \
+        -x NCCL_SOCKET_IFNAME=$INTERFACE -mca btl_tcp_if_exclude lo,docker0 \
+        python -W ignore ~/examples/horovod/mxnet/train_mxnet_hvd_mnist.py \
+        2> ${TRAINING_LOG}
+else
+  echo "Horovod training is only supported on GPU."
+  exit 0
+fi
+
+if grep "Time cost=" $TRAINING_LOG; then
+  echo "Horovod sanity test using CNN model on MNIST dataset is successful."
+  exit 0
+elif grep "Achieved accuracy" $TRAINING_LOG; then
+  echo "Horovod sanity test using CNN model on MNIST dataset is successful."
+  exit 0
+else
+  echo "Horovod sanity test using CNN model on MNIST dataset has failed"
+  echo "Training output: "
+  cat ${TRAINING_LOG}
+  exit 1
+fi
+
+exit 0

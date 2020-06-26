@@ -1,0 +1,69 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+
+if [ ! -e ${HOME_DIR}/src/anaconda2 ]; then
+   source activate caffe2_p27
+fi
+
+TEST_SCRIPT=${BIN_DIR}/testScripts/testCaffe2MNIST.py
+
+TRAINING_LOG=${HOME_DIR}/src/logs/caffe2_train_mnist.log
+VALIDATION_LOG=${HOME_DIR}/src/logs/caffe2_validate_mnist.log
+
+set -e
+
+if [ -z $1 ]; then
+    echo "usage: testCaffe2Helper python2base (default) OR testCaffe2Helper python2anaconda"
+fi
+
+PYTHON_BIN=python
+if [[ $1 == 'python2anaconda' ]]; then
+    PYTHON_BIN=${HOME_DIR}/src/anaconda2/bin/python
+    TRAINING_LOG=${HOME_DIR}/src/logs/caffe2_anaconda2_train_mnist.log
+    VALIDATION_LOG=${HOME_DIR}/src/logs/caffe2_anaconda2_validate_mnist.log
+    echo "Training mnist using Anaconda Caffe2." | tee -a $TRAINING_LOG
+else
+    echo "Training mnist using Caffe2." | tee -a $TRAINING_LOG
+fi
+
+set +e
+IS_P2_16X=`nvidia-smi -L | wc -l`
+nvidia-smi
+nvidia_output=`echo $?`
+set -e
+
+if [ ${nvidia_output} -eq 0 ]; then
+    ${PYTHON_BIN} ${TEST_SCRIPT} gpu> ${TRAINING_LOG}
+else
+    ${PYTHON_BIN} ${TEST_SCRIPT}> ${TRAINING_LOG}
+fi
+
+for i in $(grep 'test_accuracy: ' $TRAINING_LOG); do
+  echo $i> ${VALIDATION_LOG}
+done
+
+if [[ "$(cat ${VALIDATION_LOG})" < 0.9 ]]; then
+  echo "Failed Validation Accuracy using Caffe2: $(cat ${VALIDATION_LOG})"
+  exit 1
+fi
+
+ACCURACY=`cat ${VALIDATION_LOG}`
+ACCURACY=`python -c "print $ACCURACY*100"`
+ACCURACY=${ACCURACY%.*}
+
+echo "Successful Validation Accuracy using Caffe2: $ACCURACY"
+
+set +e
+#Delete the downloaded mnist and generated files
+find ${BIN_DIR}/testScripts/* ! -name '*.py' -delete
+set -e
+
+if [ ! -e ${HOME_DIR}/src/anaconda2 ]; then
+   source deactivate caffe2_p27
+fi
+
+exit 0

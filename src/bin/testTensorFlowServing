@@ -1,0 +1,43 @@
+#!/bin/bash
+. ~/.bashrc
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+SRC_DIR=${HOME_DIR}/src
+
+# Just in case
+rm -rf /tmp/mnist_model/
+
+cd ${SRC_DIR}
+git clone https://github.com/tensorflow/serving.git
+cd serving
+git checkout r1.15
+
+source activate tensorflow_p27
+
+python tensorflow_serving/example/mnist_saved_model.py models/mnist || exit 1
+
+tensorflow_model_server --port=9000 --model_name=mnist --model_base_path=${SRC_DIR}/serving/models/mnist &
+SERVER_PID=$!
+
+python tensorflow_serving/example/mnist_client.py --num_tests=1000 --server=127.0.0.1:9000 || exit 1
+
+kill -9 $SERVER_PID
+source deactivate
+
+rm -rf models
+
+source activate tensorflow_p36
+
+python tensorflow_serving/example/mnist_saved_model.py models/mnist || exit 1
+
+tensorflow_model_server --port=9000 --model_name=mnist --model_base_path=${SRC_DIR}/serving/models/mnist &
+SERVER_PID=$!
+
+python tensorflow_serving/example/mnist_client.py --num_tests=1000 --server=127.0.0.1:9000 || exit 1
+
+kill -9 $SERVER_PID
+source deactivate
+
+exit 0

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+HOME_DIR=`echo $PWD`
+TEST_DIR=${HOME_DIR}/src/integration_tests
+CONDA_ENV_LIST=($(conda info --envs | awk 'BEGIN{n=3}NR<=n{next}1' | awk '{print $1}'))
+echo ================= Test Conda Environment Imports ===================
+for (( i=0; i<${#CONDA_ENV_LIST[@]}; i++ ));
+do
+    set -e
+    echo Test conda environment: ${CONDA_ENV_LIST[i]}...
+    source activate ${CONDA_ENV_LIST[i]}
+    set +e
+    python ${TEST_DIR}/test_conda_env_import.py
+    if [ $? -eq 0 ]; then
+        echo Test ${CONDA_ENV_LIST[i]} SUCCESS!
+    else
+        echo Test ${CONDA_ENV_LIST[i]} FAILED!
+        exit 1
+    fi
+    source deactivate
+done
+echo =======================================================
+
+exit 0

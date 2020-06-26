@@ -1,0 +1,53 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+
+CAFFEDIR=$1
+CPU_ONLY=$2
+
+TRAINING_LOG=${HOME_DIR}/src/logs/caffe_train_mnist.log
+VALIDATION_LOG=${HOME_DIR}/src/logs/caffe_validate_mnist.log
+
+set -e
+
+mkdir -p ${HOME_DIR}/src/logs
+cd $CAFFEDIR
+
+echo "Getting mnist to test using CAFFE." >$TRAINING_LOG
+
+./data/mnist/get_mnist.sh >$TRAINING_LOG 2>&1|| exit 1
+./examples/mnist/create_mnist.sh >>$TRAINING_LOG 2>&1|| exit 1
+
+echo "Training mnist using Caffe... This may take a few minutes. You can follow progress on the log file : $TRAINING_LOG" | tee -a $TRAINING_LOG
+if [[ ${CPU_ONLY} -eq 0 ]]; then
+  ./build/tools/caffe train --solver=examples/mnist/lenet_solver.prototxt 2>>$TRAINING_LOG || exit 1
+else
+  ./build/tools/caffe train --solver=/opt/lenet_solver_cpu.prototxt 2>>$TRAINING_LOG || exit 1
+fi
+
+echo "Training mnist Complete using Caffe." | tee -a $TRAINING_LOG
+
+for i in $(grep 'Test net output #0: accuracy' $TRAINING_LOG); do
+  echo $i > $VALIDATION_LOG
+done
+
+if [[ "$(cat $VALIDATION_LOG)" < 0.98 ]]; then
+  echo "Failed Validation Accuracy using Caffe: $(cat $VALIDATION_LOG)"
+  exit 1
+fi
+
+ACCURACY=`cat ${VALIDATION_LOG}`
+ACCURACY=`python -c "print($ACCURACY*100)"`
+ACCURACY=${ACCURACY%.*}
+
+echo "Successful Validation Accuracy using Caffe: $ACCURACY"
+
+#Delete the downloaded mnist database
+set +e
+rm data/mnist/t10k*
+rm data/mnist/train*
+set -e
+exit 0

@@ -1,0 +1,56 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+
+git clone https://github.com/fchollet/keras.git ${HOME_DIR}/src/keras-1
+cd ${HOME_DIR}/src/keras-1
+git checkout keras-1
+
+KERASDIR=${HOME_DIR}/src/keras-1
+set -e
+cd ${KERASDIR}
+
+mkdir -p ${HOME_DIR}/src/logs
+
+export KERAS_BACKEND=mxnet
+
+TRAINING_LOG=${HOME_DIR}/src/logs/${KERAS_BACKEND}_train_mnist.log
+
+PYTHON_BIN=python
+
+if [ -e ${HOME_DIR}/src/anaconda2 ]; then
+    source ${HOME_DIR}/src/anaconda3/bin/activate keras1.2_p2
+    echo "Training mnist using $KERAS_BACKEND... This may take a few minutes. You can follow progress on the log file : $TRAINING_LOG"
+    $PYTHON_BIN examples/mnist_cnn.py >$TRAINING_LOG 2>&1 || exit 1
+    echo "Training mnist Complete using $KERAS_BACKEND and python 2"
+    source deactivate
+
+    source ${HOME_DIR}/src/anaconda3/bin/activate keras1.2_p3
+    echo "Training mnist using $KERAS_BACKEND... This may take a few minutes. You can follow progress on the log file : $TRAINING_LOG"
+    $PYTHON_BIN examples/mnist_cnn.py >$TRAINING_LOG 2>&1 || exit 1
+    echo "Training mnist Complete using $KERAS_BACKEND and python 3"
+    source deactivate
+else
+    source activate mxnet_p27
+    echo "Training mnist using $KERAS_BACKEND... This may take a few minutes. You can follow progress on the log file : $TRAINING_LOG"
+    $PYTHON_BIN examples/mnist_cnn.py >$TRAINING_LOG 2>&1 || exit 1
+    echo "Training mnist Complete using $KERAS_BACKEND and python 2"å
+    source deactivate
+
+    source activate mxnet_p36
+    echo "Training mnist using $KERAS_BACKEND... This may take a few minutes. You can follow progress on the log file : $TRAINING_LOG"
+    $PYTHON_BIN examples/mnist_cnn.py >$TRAINING_LOG 2>&1 || exit 1
+    echo "Training mnist Complete using $KERAS_BACKEND and python 3"
+    source deactivate
+fi
+
+echo "Successful test of Keras1 using $KERAS_BACKEND"
+
+#Delete the downloaded mnist database
+set +e
+rm -rf ${HOME_DIR}/.keras/datasets
+set -e
+exit 0

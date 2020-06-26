@@ -1,0 +1,54 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+
+TRAINING_LOG=${HOME_DIR}/src/logs/torch_train_mnist.log
+
+set -e
+mkdir -p ${HOME_DIR}/src/logs
+. ${HOME_DIR}/.bashrc
+cd ${HOME_DIR}/src/demos/torch/train-a-digit-classifier
+
+echo "Training mnist using Torch... This may take a few minutes. You can follow progress on the log file : $TRAINING_LOG"
+
+IS_P2_16X=`nvidia-smi -L | wc -l`
+if [ $IS_P2_16X -gt 8 ]; then
+   export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+fi
+
+set +e
+nvidia-smi
+EXIT_VAL=`echo $?`
+set -e
+if [ ${EXIT_VAL} -eq 0 ]; then
+    ${HOME_DIR}/src/torch/install/bin/th train-on-mnist.lua 2>$TRAINING_LOG 1>&2 || exit 1
+    echo "Training mnist Complete using Torch."
+else
+    ${HOME_DIR}/src/torch/install/bin/th train-on-mnist-cpu.lua 2>$TRAINING_LOG 1>&2 || exit 1
+    echo "Training mnist Complete using Torch."
+fi
+
+
+ACCURACY=93
+for i in `tail -2 $TRAINING_LOG | sed "s/global correct: //"`; do
+    ACCURACY=$i
+done
+ACCURACY=${ACCURACY%.*}
+
+if [[ $ACCURACY -lt 93 ]]; then
+    echo "Failed Validation Accuracy using Torch: `echo $ACCURACY`"
+    exit 1
+fi
+
+echo "Successful Validation Accuracy using Torch: `echo $ACCURACY`"
+
+
+#Delete the downloaded mnist database
+set +e
+rm -rf mnist.t7
+set -e
+
+exit 0

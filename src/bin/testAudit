@@ -1,0 +1,35 @@
+#!/bin/bash
+LOG_DIR=/var/log
+sudo chmod 755 $LOG_DIR
+cd $LOG_DIR || exit 1
+zero=0
+
+ls | grep -i 'audit'
+DIR_EXIST=$?
+if [ $DIR_EXIST !=  $zero ] ; then
+  echo 'Error: Directory does not exist.'
+  exit $DIR_EXIST
+fi
+sudo rpm --verify audit
+VERIFY_AUDIT=$?
+if [ $VERIFY_AUDIT != $zero ] ; then
+  echo 'Error: Cannot Verify Audit'
+  exit $VERIFY_AUDIT
+fi
+
+sudo service auditd start
+AUDIT_START=$?
+if [ $AUDIT_START != $zero ]; then
+  echo 'Error: Auditd start failed'
+  exit $AUDIT_START
+fi
+
+sudo service auditd status
+SERVICE_STATUS=$?
+if [ $SERVICE_STATUS != $zero ]; then
+  echo 'Error: Auditd status is incorrect'
+  exit $SERVICE_STATUS
+fi
+
+echo "Audit works fine."
+exit 0

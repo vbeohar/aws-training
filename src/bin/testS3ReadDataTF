@@ -1,0 +1,33 @@
+# Export AWS credentials to run MXNet S3 tests outside of pipeline infra
+# Note: Following lines printed at the end of the test:
+# InvalidRange
+# The requested range is not satisfiable:
+# 2019-06-07 20:11:22.220481: W tensorflow/core/platform/s3/aws_logging.cc:57] If the signature check failed. This could be because of a time skew. Attempting to adjust the signer.
+# Done training for 2 epochs, 1100 steps.
+
+#!/bin/bash
+. ~/.bashrc
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+TEST_DIR=$BIN_DIR/testScripts/s3-read-data
+
+echo "Testing Tensorflow S3 Read Data"
+source activate tensorflow_p27
+python ${TEST_DIR}/fullyConnectedReader.py || exit 1
+source deactivate tensorflow_p27
+source activate tensorflow_p36
+python ${TEST_DIR}/fullyConnectedReader.py || exit 1
+source deactivate tensorflow_p36
+
+echo "Testing Tensorflow-EI environments S3 Read Data"
+source activate amazonei_tensorflow_p27
+python ${TEST_DIR}/fullyConnectedReader.py || exit 1
+source deactivate amazonei_tensorflow_p27
+source activate amazonei_tensorflow_p36
+python ${TEST_DIR}/fullyConnectedReader.py || exit 1
+source deactivate amazonei_tensorflow_p36
+
+exit 0

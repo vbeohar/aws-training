@@ -1,0 +1,42 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+FOO_LOG=${HOME_DIR}/src/logs/caffe_foo_test.log
+
+CPU_ONLY=0
+function foo_test() {
+  cd ${HOME_DIR}/src/$1/examples/mnist || exit 1
+  python -c "exec(\"import caffe\\ncaffe.Net('lenet.prototxt', caffe.TEST)\\nexit()\")" 2>>$FOO_LOG || exit 1
+}
+
+#currently we are only building caffe1 for GPU instance
+nvidia-smi
+if [ $? -eq 0 ]; then
+  source activate caffe_p27
+  foo_test caffe_python_2
+  echo "Foo test completed for python 2.7. You can follow progress on the log file : $FOO_LOG"
+  ${BIN_DIR}/testCaffeHelper ${HOME_DIR}/src/caffe_python_2 ${CPU_ONLY} || exit 1
+  source deactivate
+
+  source activate caffe_p35
+  foo_test caffe_python_3
+  echo "Foo test completed for python 3.5. You can follow progress on the log file : $FOO_LOG"
+  ${BIN_DIR}/testCaffeHelper ${HOME_DIR}/src/caffe_python_3 ${CPU_ONLY} || exit 1
+  source deactivate
+fi
+
+#nvidia-smi
+#if [ $? -eq 0 ]; then
+#    ${BIN_DIR}/testCaffeHelper ${HOME_DIR}/src/caffe ${CPU_ONLY} || exit 1
+#    ${BIN_DIR}/testCaffeHelper ${HOME_DIR}/src/caffe_python3 ${CPU_ONLY} || exit 1
+#    ${BIN_DIR}/testCaffeHelper ${HOME_DIR}/src/caffe_anaconda2 ${CPU_ONLY} || exit 1
+#    ${BIN_DIR}/testCaffeHelper ${HOME_DIR}/src/caffe_anaconda3 ${CPU_ONLY} || exit 1
+#else
+#    CPU_ONLY=1
+#    ${BIN_DIR}/testCaffeHelper ${HOME_DIR}/src/caffe_cpu ${CPU_ONLY} || exit 1
+#fi
+#
+exit 0

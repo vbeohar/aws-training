@@ -1,0 +1,84 @@
+#!/bin/bash
+
+nvidia-smi
+CHECK_GPU=`echo $?`
+
+source activate chainer_p27
+pip uninstall --yes chainer
+yes | pip install chainer
+source deactivate chainer_p27
+
+source activate chainer_p36
+pip uninstall --yes chainer
+yes | pip install chainer
+source deactivate chainer_p36
+
+source activate theano_p27
+conda remove -y theano
+conda install -y theano
+source deactivate theano_p27
+
+source activate theano_p36
+conda remove -y theano
+conda install -y theano
+source deactivate theano_p36
+
+source activate pytorch_p27
+conda remove -y pytorch torchvision cuda92 -c pytorch
+conda install -y pytorch torchvision cuda92 -c pytorch
+source deactivate pytorch_p27
+
+source activate pytorch_p36
+conda remove -y pytorch torchvision cuda92 -c pytorch
+conda install -y pytorch torchvision cuda92 -c pytorch
+source deactivate pytorch_p36
+
+source activate mxnet_p27
+pip uninstall --yes mxnet-cu101mkl
+yes | pip install mxnet-cu101mkl
+source deactivate mxnet_p27
+
+source activate mxnet_p36
+pip uninstall --yes mxnet-cu101mkl
+yes | pip install mxnet-cu101mkl
+source deactivate mxnet_p36
+
+source activate tensorflow_p27
+pip uninstall --yes tensorflow
+if [ ${RETURN_VAL} -eq 0 ]; then
+    yes | pip install tensorflow-gpu
+else
+    yes | pip install tensorflow
+fi
+source deactivate tensorflow_p27
+
+source activate tensorflow_p36
+pip uninstall --yes tensorflow
+if [ ${RETURN_VAL} -eq 0 ]; then
+    yes | pip install tensorflow-gpu
+else
+    yes | pip install tensorflow
+fi
+source deactivate tensorflow_p36
+
+source activate cntk_p27
+if [ ${RETURN_VAL} -eq 0 ]; then
+    pip uninstall --yes cntk-gpu
+    yes | pip install cntk-gpu
+else
+    pip uninstall --yes cntk
+    yes | pip install cntk
+fi
+source deactivate cntk_p27
+
+source activate cntk_p36
+if [ ${RETURN_VAL} -eq 0 ]; then
+    pip uninstall --yes cntk-gpu
+    yes | pip install cntk-gpu
+else
+    pip uninstall --yes cntk
+    yes | pip install cntk
+fi
+source deactivate cntk_p36
+
+exit 0

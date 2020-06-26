@@ -1,0 +1,32 @@
+#!/bin/bash
+. ~/.bashrc
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+BIN_DIR=${HOME_DIR}/src/bin
+
+IS_P2_16X=`nvidia-smi -L | wc -l`
+if [ $IS_P2_16X -gt 8 ]; then
+   export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+fi
+
+if [ -e ${HOME_DIR}/src/anaconda2 ]; then
+    ${BIN_DIR}/testBackendWithKeras tensorflow python || exit 1
+    ${BIN_DIR}/testBackendWithKeras tensorflow python3 || exit 1
+    ${BIN_DIR}/testBackendWithKeras tensorflow ${HOME_DIR}/src/anaconda2/bin/python || exit 1
+    ${BIN_DIR}/testBackendWithKeras tensorflow ${HOME_DIR}/src/anaconda3/bin/python3 || exit 1
+    exit 0
+fi
+
+git clone https://github.com/fchollet/keras.git ${HOME_DIR}/src/keras
+cd ${HOME_DIR}/src/keras
+source activate tensorflow_p27
+${BIN_DIR}/testBackendWithKeras tensorflow python || exit 1
+source deactivate
+source activate tensorflow_p36
+${BIN_DIR}/testBackendWithKeras tensorflow python || exit 1
+source deactivate
+rm -rf ${HOME_DIR}/src/keras
+exit 0
+

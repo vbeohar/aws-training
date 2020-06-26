@@ -1,0 +1,31 @@
+#!/bin/bash
+. ~/.bashrc
+
+HOME_DIR=$(echo $PWD)
+
+cd ~/src
+git clone https://github.com/pytorch/examples.git pytorch_examples
+cd pytorch_examples
+# 1.0.0 examples are not available yet
+git checkout 0.4
+cd mnist
+
+if [ -e ${HOME_DIR}/src/anaconda2 ]; then
+    sudo python -m pip install --no-deps torchvision
+    sudo pip3 install --no-deps torchvision
+    sudo ${HOME_DIR}/src/anaconda2/bin/pip install --no-deps torchvision
+    sudo ${HOME_DIR}/src/anaconda3/bin/pip install --no-deps torchvision
+    python main.py || exit 1
+    python3 main.py || exit 1
+    ${HOME_DIR}/src/anaconda2/bin/python main.py || exit 1
+    ${HOME_DIR}/src/anaconda3/bin/python3 main.py || exit 1
+    exit 0
+fi
+
+source activate pytorch_p27
+python main.py || exit 1
+source deactivate
+
+source activate pytorch_p36
+python main.py || exit 1
+source deactivate

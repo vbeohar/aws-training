@@ -1,0 +1,42 @@
+#!/bin/bash
+. ~/.bashrc
+
+set -e
+
+echo "This takes around 30 minutes on a g2.2xlarge instance."
+echo "These are just test scripts to check if the frameworks are installed correctly. This is NOT a performance benchmark of the DL frameworks"
+echo "Starting..."
+
+if [ -e $(dirname $0)/testCaffe ]; then
+    $(dirname $0)/testCaffe || (echo "testCaffe : TEST FAILED" && exit 1)
+fi
+
+if [ -e $(dirname $0)/testCaffe2 ]; then
+    $(dirname $0)/testCaffe2 || (echo "testCaffe2 : TEST FAILED" && exit 1)
+fi
+
+if [ -e $(dirname $0)/testMXNet ]; then
+    $(dirname $0)/testMXNet || (echo "testMXNet : TEST FAILED" && exit 1)
+fi
+
+if [ -e $(dirname $0)/testTheano ]; then
+    $(dirname $0)/testTheano || (echo "testTheano : TEST FAILED" && exit 1)
+fi
+
+if [ -e $(dirname $0)/testTensorFlow ]; then
+    $(dirname $0)/testTensorFlow || (echo "testTensorFlow : TEST FAILED" && exit 1)
+fi
+
+if [ -e $(dirname $0)/testPyTorch ]; then
+    $(dirname $0)/testPyTorch || (echo "testPyTorch : TEST FAILED" && exit 1)
+fi
+
+if [ -e $(dirname $0)/testCNTK ]; then
+    $(dirname $0)/testCNTK || (echo "testCNTK : TEST FAILED" && exit 1)
+fi
+
+if [ -e $(dirname $0)/testChainer ]; then
+    $(dirname $0)/testChainer || (echo "testChainer : TEST FAILED" && exit 1)
+fi
+
+echo "All tests PASSED"

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+
+if [ -e ${HOME_DIR}/src/anaconda2 ]; then
+    ${BIN_DIR}/testCaffe2Helper python2base || exit 1
+    ${BIN_DIR}/testCaffe2Helper python2anaconda || exit 1
+    exit 0
+fi
+
+source activate caffe2_p27
+${BIN_DIR}/testCaffe2Helper python2base || exit 1
+source deactivate
+
+exit 0

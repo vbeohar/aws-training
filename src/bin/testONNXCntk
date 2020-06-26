@@ -1,0 +1,31 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+
+declare -a cntk_files=('testBasicONNX.py' 'onnx_cntk/onnx_cntk.sh')
+declare -a pytorch_files=('testBasicONNX.py' 'onnx_pytorch/onnx_pytorch.sh')
+declare -a chainer_files=('testBasicONNX.py' 'onnx_chainer/onnx_chainer.sh')
+
+source activate cntk_p27
+echo "cntk_p27"
+for file in "${cntk_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+
+source activate cntk_p36
+echo "cntk_p36"
+for file in "${cntk_files[@]}"; do echo $file; ${BIN_DIR}/testScripts/$file || exit 1; done;
+source deactivate
+
+echo "chainer-cntk"
+${BIN_DIR}/testScripts/chainer-cntk/test_runner.sh || exit 1
+
+echo "pytorch-cntk"
+${BIN_DIR}/testScripts/pytorch-cntk/test_runner.sh || exit 1
+
+#echo "mxnet-cntk"
+#${BIN_DIR}/testScripts/mxnet-cntk/test_runner.sh || exit 1
+
+exit 0

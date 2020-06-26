@@ -1,0 +1,30 @@
+#!/bin/bash
+
+cat ~/.config/matplotlib/matplotlibrc | grep "backend : agg" || echo "backend : agg" > ~/.config/matplotlib/matplotlibrc
+
+cd /tmp
+CHAINER_VERSION=6.1.0
+wget https://github.com/chainer/chainer/archive/v${CHAINER_VERSION}.tar.gz
+tar xzf v${CHAINER_VERSION}.tar.gz
+PIPELINE_TEST=$1
+
+DISPLAY=:0.0
+GPU_AMOUNT=`nvidia-smi -L | wc -l`
+TRAIN_COMMAND="chainer-${CHAINER_VERSION}/examples/mnist/train_mnist.py"
+if [ $GPU_AMOUNT -ge 4 ]; then
+   TRAIN_COMMAND="chainer-${CHAINER_VERSION}/examples/mnist/train_mnist_data_parallel.py --gpu0 0 --gpu1 1"
+fi
+
+if [ ${PIPELINE_TEST} = true ]; then
+      TRAIN_COMMAND="${TRAIN_COMMAND} --epoch 2"
+fi
+
+source activate chainer_p27
+python $TRAIN_COMMAND || exit 1
+source deactivate
+
+source activate chainer_p36
+python $TRAIN_COMMAND  || exit 1
+source deactivate
+
+exit 0

@@ -1,0 +1,47 @@
+#!/bin/bash
+. ~/.bashrc
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=`echo $PWD`
+TEST_DIR=${HOME_DIR}/examples/tensorflow2_serving
+BIN_DIR=${HOME_DIR}/src/bin
+
+# Just in case
+cd ${TEST_DIR}
+rm -rf models
+
+source activate tensorflow2_p27
+
+
+python mnist_saved_model.py models/mnist || exit 1
+
+
+tensorflow2_model_server --port=9000 --model_name=mnist --model_base_path=${TEST_DIR}/models/mnist &
+SERVER_PID=$!
+
+python ${BIN_DIR}/testScripts/check_tf_model_server_status.py 9000 || exit 1
+
+python mnist_client.py --num_tests=1000 --server=127.0.0.1:9000 || exit 1
+
+kill -9 $SERVER_PID
+source deactivate
+
+rm -rf models
+
+source activate tensorflow2_p36
+
+python mnist_saved_model.py models/mnist || exit 1
+
+tensorflow2_model_server --port=9000 --model_name=mnist --model_base_path=${TEST_DIR}/models/mnist &
+SERVER_PID=$!
+
+python ${BIN_DIR}/testScripts/check_tf_model_server_status.py 9000 || exit 1
+
+python mnist_client.py --num_tests=1000 --server=127.0.0.1:9000 || exit 1
+
+kill -9 $SERVER_PID
+source deactivate
+rm -rf models
+
+exit 0

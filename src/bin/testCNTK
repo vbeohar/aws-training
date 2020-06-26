@@ -1,0 +1,78 @@
+#!/bin/bash
+. ~/.bashrc
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+CNTK_DIR=${HOME_DIR}/src/cntk
+TRAINING_LOG=${HOME_DIR}/src/logs/cntk_train_mnist.log
+VALIDATION_LOG=${HOME_DIR}/src/logs/cntk_validate_mnist.log
+
+set -e
+
+mkdir -p ${HOME_DIR}/src/logs
+
+echo "Getting mnsit to test using CNTK." >$TRAINING_LOG
+
+if [ ! -e ${HOME_DIR}/src/anaconda2 ]; then
+    cd ${HOME_DIR}/src
+    rm -rf cntk_test
+    rm -rf keras_examples
+    git clone https://github.com/Microsoft/CNTK.git cntk_test
+    git clone https://github.com/fchollet/keras.git keras_examples
+
+    cd ${HOME_DIR}/src/cntk_test
+    git checkout 35255ed03bd0ffe6fdc536a4900e90bca5d38efe
+    python Examples/Image/DataSets/MNIST/install_mnist.py
+
+    source ${HOME_DIR}/anaconda3/bin/activate cntk_p27
+    cd ${HOME_DIR}/src
+    python cntk_test/Examples/Image/Classification/MLP/Python/SimpleMNIST.py
+    cd ${HOME_DIR}/src/keras_examples/examples
+    python mnist_mlp.py
+    source deactivate
+
+    source ${HOME_DIR}/anaconda3/bin/activate cntk_p36
+    cd ${HOME_DIR}/src
+    python cntk_test/Examples/Image/Classification/MLP/Python/SimpleMNIST.py
+    cd ${HOME_DIR}/src/keras_examples/examples
+    python mnist_mlp.py
+    source deactivate
+
+    exit 0
+fi
+
+cd ${CNTK_DIR}/Examples/Image/DataSets/MNIST
+
+python install_mnist.py
+
+cd ${CNTK_DIR}/Examples/Image/GettingStarted
+rm -rf Output/
+
+${CNTK_DIR}/bin/cntk configFile=03_OneConvDropout.cntk>>$TRAINING_LOG 2>&1
+
+echo "Training mnist Complete using CNTK." | tee -a $TRAINING_LOG
+
+for i in $(awk '/Final Results:/{print $6}' $TRAINING_LOG); do
+  echo ${i::-1} > $VALIDATION_LOG
+done
+
+ERROR=`cat $VALIDATION_LOG`
+ERROR=${ERROR%.*}
+VALIDATION_ACCURACY=$(expr 100 - $ERROR)
+
+
+if [[ $VALIDATION_ACCURACY < 97 ]]; then
+  echo "Failed Validation Accuracy using CNTK: $VALIDATION_ACCURACY"
+  echo "Training Log:"
+  cat $TRAINING_LOG
+  exit 1
+fi
+
+echo "Successful Validation Accuracy using CNTK: $VALIDATION_ACCURACY%"
+
+set +e
+cd ${CNTK_DIR}/Examples/Image/DataSets/MNIST
+rm *.txt
+set -e

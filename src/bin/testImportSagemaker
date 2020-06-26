@@ -1,0 +1,31 @@
+#!/bin/bash
+
+failed_env=()
+
+python -c "import sagemaker"
+import_succ=$?
+if [ $import_succ -ne 0 ]
+then
+    failed_env+=("base_conda")
+fi
+
+CONDA_ENV_LIST=($(conda info --envs | awk 'BEGIN{n=2}NR<=n{next}1' | awk '{print $1}'))
+for (( i=0; i<${#CONDA_ENV_LIST[@]}; i++ ));
+do
+    source activate ${CONDA_ENV_LIST[i]}
+    python -c "import sagemaker"
+    import_succ=$?
+    source deactivate
+    if [ $import_succ -ne 0 ]
+    then
+        failed_env+=("${CONDA_ENV_LIST[i]}")
+    fi
+done
+
+if [ ${#failed_env[@]} -ne 0 ]
+then
+    echo "ERROR: import sagemaker failed in env" ${failed_env[@]}
+    exit 1
+fi
+
+exit 0

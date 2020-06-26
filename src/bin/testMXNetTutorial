@@ -1,0 +1,28 @@
+#!/bin/bash
+
+. $(dirname $0)/testUtil
+cd_to_home_dir
+HOME_DIR=$(echo $PWD)
+BIN_DIR=${HOME_DIR}/src/bin
+TUTORIAL_DIR=${HOME_DIR}/tutorials/MXNet
+
+rm -rf ${HOME_DIR}/tutorials/MXNet/*.py
+find ${TUTORIAL_DIR} -type f -name "*.ipynb" | xargs jupyter nbconvert --to python
+
+for i in ${TUTORIAL_DIR}/*.py;
+do
+ echo "matplotlib.use('Agg')" | cat - $i > /tmp/temp && mv /tmp/temp $i;
+ echo "import matplotlib" | cat - $i > /tmp/temp && mv /tmp/temp $i;
+done;
+
+source activate mxnet_p27
+python ${TUTORIAL_DIR}/linear-regression-scratch.py || exit 1
+source deactivate
+source activate mxnet_p36
+python ${TUTORIAL_DIR}/hybridize.py || exit 1
+source deactivate
+source activate mxnet_p36
+python ${TUTORIAL_DIR}/ndarray.py || exit 1
+source deactivate
+
+exit 0
